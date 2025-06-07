@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement } from 'chart.js';
+import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Legend } from 'chart.js';
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement);
+ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Legend);
 
 function App() {
   const [data, setData] = useState([]);
@@ -198,7 +198,7 @@ function App() {
     labels: data.map((entry) => entry.date),
     datasets: [
       {
-        label: 'Weight (lbs)',
+        label: 'Daily Weight (lbs)',
         data: data.map((entry) => parseFloat(entry.weight)),
         borderColor: '#5a7f5a', // sage-500
         backgroundColor: 'rgba(90, 127, 90, 0.1)',
@@ -209,6 +209,36 @@ function App() {
         pointBorderWidth: 2,
         pointRadius: 6,
         pointHoverRadius: 8,
+      },
+      {
+        label: '7-Day Average (lbs)',
+        data: data.map((entry, index) => {
+          // Only calculate average if this entry has valid weight data
+          if (!entry.weight || entry.weight === '' || isNaN(parseFloat(entry.weight))) {
+            return null;
+          }
+          
+          // Calculate 7-day rolling average for each point with weight data
+          const startIndex = Math.max(0, index - 6);
+          const relevantData = data.slice(startIndex, index + 1);
+          const validWeights = relevantData.filter(dataEntry => 
+            dataEntry.weight && dataEntry.weight !== '' && !isNaN(parseFloat(dataEntry.weight))
+          );
+          
+          if (validWeights.length === 0) return null;
+          
+          const sum = validWeights.reduce((acc, dataEntry) => acc + parseFloat(dataEntry.weight), 0);
+          return (sum / validWeights.length);
+        }),
+        borderColor: 'rgba(59, 130, 246, 0.7)', // blue-500 with opacity
+        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        tension: 0.4,
+        borderWidth: 3,
+        pointBackgroundColor: 'rgba(59, 130, 246, 0.8)',
+        pointBorderColor: '#ffffff',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+        pointHoverRadius: 6,
       },
     ],
   };
@@ -562,13 +592,21 @@ function App() {
                       maintainAspectRatio: false,
                       plugins: {
                         legend: {
+                          display: true,
+                          position: 'top',
+                          align: 'center',
                           labels: {
                             color: '#5a7f5a',
                             font: {
                               family: 'Inter',
                               size: 14,
                               weight: '500'
-                            }
+                            },
+                            padding: 20,
+                            usePointStyle: true,
+                            pointStyle: 'circle',
+                            boxWidth: 12,
+                            boxHeight: 12
                           }
                         }
                       },
