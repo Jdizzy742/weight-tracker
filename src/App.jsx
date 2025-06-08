@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import Papa from 'papaparse';
 import { Line } from 'react-chartjs-2';
-import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Legend } from 'chart.js';
+import { Chart as ChartJS, LineElement, CategoryScale, LinearScale, PointElement, Legend, Tooltip } from 'chart.js';
 
-ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Legend);
+ChartJS.register(LineElement, CategoryScale, LinearScale, PointElement, Legend, Tooltip);
 
 function App() {
   const [data, setData] = useState([]);
@@ -262,17 +262,7 @@ function App() {
         pointRadius: 4,
         pointHoverRadius: 6,
       },
-      {
-        label: 'Weekends',
-        data: [], // Empty data to prevent rendering on the chart
-        backgroundColor: '#f97316',
-        pointBackgroundColor: '#f97316',
-        pointBorderColor: '#ffffff',
-        pointBorderWidth: 2,
-        pointRadius: 6,
-        pointStyle: 'circle',
-        showLine: false, // Ensure no line is drawn
-      },
+
     ],
   };
 
@@ -283,6 +273,168 @@ function App() {
     if (nutritionAvgs.sevenDay.entryCount >= 5) return "Fantastic nutrition tracking! You're building awesome habits! 💪";
     if (nutritionAvgs.sevenDay.entryCount >= 3) return "Great job staying consistent with nutrition! Keep it up! 🎯";
     return "Nice start on nutrition tracking! Every entry helps you understand your patterns better! 📊";
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: true,
+        position: 'top',
+        align: 'center',
+        labels: {
+          color: '#5a7f5a',
+          font: {
+            family: 'Inter',
+            size: 14,
+            weight: '500'
+          },
+          padding: 20,
+          usePointStyle: true,
+          generateLabels: function(chart) {
+            return [
+              {
+                text: 'Daily Weight (lbs)',
+                fillStyle: '#5a7f5a',
+                strokeStyle: '#ffffff',
+                lineWidth: 2,
+                hidden: false,
+                datasetIndex: 0,
+                pointStyle: 'circle',
+                boxWidth: 12,
+                boxHeight: 12,
+              },
+              {
+                text: '7-Day Average (lbs)',
+                fillStyle: 'rgba(59, 130, 246, 0.7)',
+                strokeStyle: '#ffffff',
+                lineWidth: 2,
+                hidden: false,
+                datasetIndex: 1,
+                pointStyle: 'circle',
+                boxWidth: 12,
+                boxHeight: 12,
+              },
+              {
+                text: 'Weekends',
+                fillStyle: '#f97316',
+                strokeStyle: '#ffffff',
+                lineWidth: 2,
+                hidden: false,
+                datasetIndex: -1, // No associated dataset
+                pointStyle: 'circle',
+                boxWidth: 12,
+                boxHeight: 12,
+              },
+            ];
+          }
+        }
+      },
+      tooltip: {
+        enabled: true,
+        backgroundColor: 'rgba(255, 255, 255, 0.95)',
+        titleColor: '#5a7f5a',
+        bodyColor: '#374151',
+        borderColor: '#5a7f5a',
+        borderWidth: 2,
+        cornerRadius: 12,
+        displayColors: true,
+        padding: 12,
+        titleFont: {
+          family: 'Inter',
+          size: 14,
+          weight: '600'
+        },
+        bodyFont: {
+          family: 'Inter',
+          size: 13,
+          weight: '500'
+        },
+        callbacks: {
+          title: function(context) {
+            const dataIndex = context[0].dataIndex;
+            const date = data[dataIndex]?.date;
+            if (date) {
+              const formattedDate = new Date(date).toLocaleDateString('en-US', {
+                weekday: 'long',
+                month: 'long',
+                day: 'numeric',
+                year: 'numeric'
+              });
+              return formattedDate;
+            }
+            return 'Unknown Date';
+          },
+          label: function(context) {
+            const datasetLabel = context.dataset.label;
+            const value = context.parsed.y;
+            
+            if (datasetLabel === 'Daily Weight (lbs)') {
+              return `Weight: ${value.toFixed(1)} lbs`;
+            } else if (datasetLabel === '7-Day Average (lbs)') {
+              return `7-Day Average: ${value.toFixed(1)} lbs`;
+            }
+            
+            return `${datasetLabel}: ${value.toFixed(1)} lbs`;
+          },
+          afterBody: function(context) {
+            const dataIndex = context[0].dataIndex;
+            const entry = data[dataIndex];
+            const datasetLabel = context[0].dataset.label;
+            
+            // Only show nutrition info for daily weight points
+            if (datasetLabel === 'Daily Weight (lbs)') {
+              const nutritionInfo = [];
+              if (entry?.calories) nutritionInfo.push(`🔥 ${entry.calories} calories`);
+              if (entry?.protein) nutritionInfo.push(`💪 ${entry.protein}g protein`);
+              if (entry?.carbs) nutritionInfo.push(`⚡ ${entry.carbs}g carbs`);
+              if (entry?.fats) nutritionInfo.push(`🥑 ${entry.fats}g fats`);
+              
+              if (nutritionInfo.length > 0) {
+                return ['', ...nutritionInfo];
+              }
+            }
+            
+            return [];
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          color: 'rgba(90, 127, 90, 0.1)'
+        },
+        ticks: {
+          color: '#5a7f5a',
+          font: {
+            family: 'Inter',
+            size: 12
+          },
+          maxRotation: 45,
+          minRotation: 0
+        }
+      },
+      y: {
+        grid: {
+          color: 'rgba(90, 127, 90, 0.1)'
+        },
+        ticks: {
+          color: '#5a7f5a',
+          font: {
+            family: 'Inter'
+          }
+        }
+      }
+    },
+    interaction: {
+      intersect: true,
+      mode: 'point'
+    },
+    hover: {
+      animationDuration: 200
+    }
   };
 
   return (
@@ -395,91 +547,7 @@ function App() {
                     <div className="w-full h-96">
                       <Line 
                         data={weightChartData} 
-                        options={{
-                          responsive: true,
-                          maintainAspectRatio: false,
-                          plugins: {
-                            legend: {
-                              display: true,
-                              position: 'top',
-                              align: 'center',
-                              labels: {
-                                color: '#5a7f5a',
-                                font: {
-                                  family: 'Inter',
-                                  size: 14,
-                                  weight: '500'
-                                },
-                                padding: 20,
-                                usePointStyle: true, // Use point style for legend
-                                generateLabels: function(chart) {
-                                  return [
-                                    {
-                                      text: 'Daily Weight (lbs)',
-                                      fillStyle: '#5a7f5a',
-                                      strokeStyle: '#ffffff',
-                                      lineWidth: 2,
-                                      hidden: false,
-                                      datasetIndex: 0,
-                                      pointStyle: 'circle',
-                                      boxWidth: 12,
-                                      boxHeight: 12,
-                                    },
-                                    {
-                                      text: '7-Day Average (lbs)',
-                                      fillStyle: 'rgba(59, 130, 246, 0.7)',
-                                      strokeStyle: '#ffffff',
-                                      lineWidth: 2,
-                                      hidden: false,
-                                      datasetIndex: 1,
-                                      pointStyle: 'circle',
-                                      boxWidth: 12,
-                                      boxHeight: 12,
-                                    },
-                                    {
-                                      text: 'Weekends',
-                                      fillStyle: '#f97316',
-                                      strokeStyle: '#ffffff',
-                                      lineWidth: 2,
-                                      hidden: false,
-                                      datasetIndex: 2,
-                                      pointStyle: 'circle',
-                                      boxWidth: 12,
-                                      boxHeight: 12,
-                                    },
-                                  ];
-                                }
-                              }
-                            }
-                          },
-                          scales: {
-                            x: {
-                              grid: {
-                                color: 'rgba(90, 127, 90, 0.1)'
-                              },
-                              ticks: {
-                                color: '#5a7f5a',
-                                font: {
-                                  family: 'Inter',
-                                  size: 12
-                                },
-                                maxRotation: 45,
-                                minRotation: 0
-                              }
-                            },
-                            y: {
-                              grid: {
-                                color: 'rgba(90, 127, 90, 0.1)'
-                              },
-                              ticks: {
-                                color: '#5a7f5a',
-                                font: {
-                                  family: 'Inter'
-                                }
-                              }
-                            }
-                          }
-                        }}
+                        options={chartOptions}
                       />
                     </div>
                   </div>
