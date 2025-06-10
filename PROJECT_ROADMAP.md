@@ -16,9 +16,8 @@
 ### For Users
 - **Simplicity First**: Quick daily entry (< 30 seconds)
 - **Visual Progress**: Clear graphs showing trends over time
-- **Flexible Tracking**: No pressure to log every metric daily
 - **Educational Content**: Personalized calorie calculator and nutrition guides
-- **Data Ownership**: Export capabilities and offline logging
+- **Data Ownership**: Export capabilities
 - **Professional Integration**: Future coaching features for nutrition professionals
 
 ### Target Audience & Marketing
